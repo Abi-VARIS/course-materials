@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basecamp Coffee Personality Quiz</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #FDF6EC;
+    --warm-white: #FFFAF3;
+    --brown-dark: #3E2723;
+    --brown-medium: #5D4037;
+    --brown-light: #8D6E63;
+    --green-muted: #7A8B6F;
+    --terracotta: #C17C60;
+    --gold: #D4A056;
+    --text-primary: #3E2723;
+    --text-secondary: #6D4C41;
+    --border: #E0D5C7;
+    --shadow: rgba(62, 39, 35, 0.08);
+
+    /* Type accent colors */
+    --bold-adventurer: #8B5E3C;
+    --campfire-connector: #C17C60;
+    --cozy-ritualist: #7A8B6F;
+    --flavor-explorer: #D4A056;
+  }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--cream);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Progress Bar */
+  .progress-bar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: var(--border);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .progress-bar-wrapper.visible { opacity: 1; }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--brown-medium);
+    border-radius: 0 3px 3px 0;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-text {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .progress-text.visible { opacity: 1; }
+
+  /* Screens */
+  .screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    animation: fadeIn 0.4s ease;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Welcome Screen */
+  .welcome { text-align: center; }
+
+  .welcome h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--brown-dark);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .welcome .subtitle {
+    font-size: 18px;
+    color: var(--brown-light);
+    margin-bottom: 32px;
+  }
+
+  .welcome .intro {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin: 0 auto 40px;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: var(--brown-medium);
+    color: var(--warm-white);
+    border: none;
+    padding: 16px 48px;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+    font-family: inherit;
+  }
+  .btn-primary:hover { background: var(--brown-dark); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Question Screen */
+  .question-card {
+    background: var(--warm-white);
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 2px 16px var(--shadow);
+    border: 1px solid var(--border);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .question-card h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--brown-dark);
+    margin-bottom: 24px;
+    line-height: 1.4;
+  }
+
+  .answers {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .answer-btn {
+    width: 100%;
+    text-align: left;
+    background: var(--cream);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    padding: 16px 20px;
+    font-size: 15px;
+    line-height: 1.4;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    font-family: inherit;
+  }
+  .answer-btn:hover {
+    border-color: var(--brown-light);
+    background: var(--warm-white);
+    transform: translateX(4px);
+  }
+  .answer-btn:active { transform: translateX(2px); }
+
+  /* Result Screen */
+  .result { align-items: stretch; }
+
+  .result-header {
+    text-align: center;
+    padding: 40px 24px 32px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    color: white;
+  }
+
+  .result-header .label {
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.85;
+    margin-bottom: 8px;
+  }
+
+  .result-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .result-header .tagline {
+    font-size: 18px;
+    font-style: italic;
+    opacity: 0.9;
+  }
+
+  .result-header .secondary-type {
+    margin-top: 16px;
+    font-size: 14px;
+    opacity: 0.8;
+    background: rgba(255,255,255,0.15);
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+  }
+
+  .result-card {
+    background: var(--warm-white);
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: 0 2px 16px var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .result-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brown-dark);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .result-card p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .traits-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .traits-list li {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding-left: 20px;
+    position: relative;
+  }
+  .traits-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--brown-light);
+  }
+
+  .drinks-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .drinks-list li {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .drinks-list .drink-name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .nudge-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    background: var(--cream);
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid var(--brown-light);
+  }
+
+  .share-section {
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .share-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+  }
+
+  .btn-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--brown-medium);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-family: inherit;
+  }
+  .btn-copy:hover { background: var(--brown-dark); }
+  .btn-copy.copied { background: var(--green-muted); }
+
+  .btn-retake {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: transparent;
+    color: var(--brown-medium);
+    border: 2px solid var(--brown-medium);
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    margin-top: 8px;
+    font-family: inherit;
+  }
+  .btn-retake:hover { background: var(--brown-medium); color: white; }
+
+  /* Type-specific accent colors on result header */
+  .result-header.bold-adventurer { background: linear-gradient(135deg, #6D4C41, #8B5E3C); }
+  .result-header.campfire-connector { background: linear-gradient(135deg, #A0604B, #C17C60); }
+  .result-header.cozy-ritualist { background: linear-gradient(135deg, #5F6F52, #7A8B6F); }
+  .result-header.flavor-explorer { background: linear-gradient(135deg, #B8873E, #D4A056); }
+
+  /* Mobile adjustments */
+  @media (max-width: 480px) {
+    .container { padding: 16px 16px; }
+    .welcome h1 { font-size: 26px; }
+    .welcome .subtitle { font-size: 16px; }
+    .question-card { padding: 24px 20px; }
+    .question-card h2 { font-size: 18px; }
+    .answer-btn { padding: 14px 16px; font-size: 14px; }
+    .result-header h1 { font-size: 26px; }
+    .result-card { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar-wrapper" id="progressWrapper">
+  <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="container">
+  <p class="progress-text" id="progressText"></p>
+
+  <!-- Welcome Screen -->
+  <div class="screen active" id="welcomeScreen">
+    <div class="welcome">
+      <h1>What's Your Coffee Personality?</h1>
+      <p class="subtitle">A quiz by Basecamp Coffee</p>
+      <p class="intro">Answer 10 quick questions and we'll tell you what kind of coffee drinker you really are — plus your perfect drink recommendations.</p>
+      <button class="btn-primary" onclick="startQuiz()">Start Quiz</button>
+    </div>
+  </div>
+
+  <!-- Question Screen -->
+  <div class="screen" id="questionScreen">
+    <div class="question-card">
+      <h2 id="questionText"></h2>
+      <div class="answers" id="answersContainer"></div>
+    </div>
+  </div>
+
+  <!-- Result Screen -->
+  <div class="screen" id="resultScreen">
+    <div class="result" id="resultContent"></div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    axis: "adventure",
+    text: "You walk into Basecamp and the barista says \u201CWant to try something new?\u201D You say\u2026",
+    answers: [
+      { text: "Always! What\u2019ve you got?", score: 2 },
+      { text: "Sure, tell me about it first", score: 1 },
+      { text: "Maybe next time \u2014 I\u2019ll take my usual", score: -1 },
+      { text: "Nah, my order is perfect as is", score: -2 }
+    ]
+  },
+  {
+    axis: "adventure",
+    text: "Your ideal coffee menu has\u2026",
+    answers: [
+      { text: "A rotating single-origin I\u2019ve never seen before", score: 2 },
+      { text: "A good mix of classics and seasonal specials", score: 1 },
+      { text: "All the staples, done really well", score: -1 },
+      { text: "Honestly, I only need one page", score: -2 }
+    ]
+  },
+  {
+    axis: "adventure",
+    text: "A friend gives you a bag of coffee from a country you\u2019ve never heard of. You\u2026",
+    answers: [
+      { text: "Brew it immediately \u2014 this is the best kind of surprise", score: 2 },
+      { text: "Google the region first, then brew it", score: 1 },
+      { text: "Save it for the weekend when you can compare it to your usual", score: -1 },
+      { text: "Smile, say thanks, and quietly stick with your go-to beans", score: -2 }
+    ]
+  },
+  {
+    axis: "adventure",
+    text: "Your coffee order history looks like\u2026",
+    answers: [
+      { text: "A world tour \u2014 different every time", score: 2 },
+      { text: "Mostly varied, with a few repeats", score: 1 },
+      { text: "A few reliable favorites I rotate between", score: -1 },
+      { text: "The same drink, every single time. Why mess with perfection?", score: -2 }
+    ]
+  },
+  {
+    axis: "adventure",
+    text: "The seasonal menu just dropped. You\u2026",
+    answers: [
+      { text: "Already tried it. Thoughts? It\u2019s interesting.", score: 2 },
+      { text: "Add it to the list \u2014 I\u2019ll try it this week", score: 1 },
+      { text: "Glance at it, maybe try one thing eventually", score: -1 },
+      { text: "Didn\u2019t notice, honestly. My order doesn\u2019t change with the seasons", score: -2 }
+    ]
+  },
+  {
+    axis: "social",
+    text: "Your perfect coffee moment is\u2026",
+    answers: [
+      { text: "A long catch-up with a friend, coffees in hand", score: 2 },
+      { text: "Grabbing coffee with a coworker between meetings", score: 1 },
+      { text: "A quiet morning at home before anyone else wakes up", score: -1 },
+      { text: "Solo at a window seat, journal open, world tuned out", score: -2 }
+    ]
+  },
+  {
+    axis: "social",
+    text: "When you find a coffee you love, you\u2026",
+    answers: [
+      { text: "Text three people about it immediately", score: 2 },
+      { text: "Mention it next time you\u2019re with a friend", score: 1 },
+      { text: "Make a mental note and quietly enjoy it", score: -1 },
+      { text: "Keep it as your own little secret", score: -2 }
+    ]
+  },
+  {
+    axis: "social",
+    text: "Your go-to coffee shop is great because of\u2026",
+    answers: [
+      { text: "The people \u2014 baristas, regulars, the whole community", score: 2 },
+      { text: "The vibe \u2014 it\u2019s easy to hang out and be around people", score: 1 },
+      { text: "The quality \u2014 they make a really good cup", score: -1 },
+      { text: "The atmosphere \u2014 it\u2019s calm, cozy, and never too loud", score: -2 }
+    ]
+  },
+  {
+    axis: "social",
+    text: "Saturday morning. No plans. Coffee is\u2026",
+    answers: [
+      { text: "An excuse to meet up with someone", score: 2 },
+      { text: "Better with company, but fine either way", score: 1 },
+      { text: "Best enjoyed slowly, on your own terms", score: -1 },
+      { text: "A ritual. Same mug, same spot, same peace", score: -2 }
+    ]
+  },
+  {
+    axis: "social",
+    text: "You\u2019re buying coffee for someone. You\u2026",
+    answers: [
+      { text: "Know their order by heart \u2014 you pay attention", score: 2 },
+      { text: "Ask what they want and grab it happily", score: 1 },
+      { text: "Get them what you like \u2014 they should try it", score: -1 },
+      { text: "Honestly, you don\u2019t usually buy for others", score: -2 }
+    ]
+  }
+];
+
+const personalityTypes = {
+  "Bold Adventurer": {
+    cssClass: "bold-adventurer",
+    tagline: "Life\u2019s too short for the same cup twice.",
+    description: "You treat every cup like a tiny expedition. While other people are reaching for their usual, you\u2019re scanning the menu for something you\u2019ve never tried \u2014 a new origin, a wild processing method, an espresso tonic that sounds like it shouldn\u2019t work but absolutely does. Coffee isn\u2019t just a drink for you; it\u2019s a way to learn something new about the world and about yourself. You don\u2019t just like coffee. You study it, one adventurous sip at a time.",
+    traits: [
+      "<strong>Curiosity-driven</strong> \u2014 You want to know where the beans came from, how they were processed, and why the barista chose that brew method.",
+      "<strong>Fearlessly experimental</strong> \u2014 \u201CWeird\u201D is a compliment. You\u2019ll try anything once, and you\u2019ll try the strange stuff twice.",
+      "<strong>Quietly passionate</strong> \u2014 You don\u2019t need to broadcast your coffee knowledge, but when someone asks, you light up.",
+      "<strong>Detail-oriented palate</strong> \u2014 You actually taste the \u201Cnotes of blackberry and cedar\u201D on the bag, and you love that about yourself."
+    ],
+    drinks: [
+      { name: "Single-Origin Pour-Over", desc: "Ask the barista what\u2019s new this week. That\u2019s your order." },
+      { name: "Espresso Flight", desc: "Three origins, three tiny cups, one big adventure." },
+      { name: "Nitro Cold Brew", desc: "Creamy without the cream. Smooth enough to let the bean\u2019s character shine." }
+    ],
+    nudge: "A lavender oat milk latte. Yes, really. Sometimes the best discoveries happen when you let someone else pick the adventure for you.",
+    shareText: "I\u2019m a Bold Adventurer! \u2615\uFE0F\uD83C\uDFD4\uFE0F Life\u2019s too short for the same cup twice. I\u2019m the one asking the barista what\u2019s new, chasing single-origins, and turning every coffee run into a tiny expedition. What\u2019s YOUR coffee personality? #BasecampCoffee"
+  },
+  "Campfire Connector": {
+    cssClass: "campfire-connector",
+    tagline: "The best conversations start with \u201CWant to grab coffee?\u201D",
+    description: "For you, coffee has never really been about the coffee. It\u2019s about the person sitting across from you. You\u2019re the one who texts \u201Ccoffee this week?\u201D to check in on a friend, who knows everyone\u2019s order by heart, and who turns a quick latte run into an hour-long catch-up. Your favorite mug is whichever one is in your hand when you\u2019re with your people. Basecamp isn\u2019t just your coffee shop \u2014 it\u2019s your living room.",
+    traits: [
+      "<strong>Relationship-first</strong> \u2014 You remember that your coworker switched to decaf and you ask how they\u2019re doing, not just what they\u2019re drinking.",
+      "<strong>Generous by default</strong> \u2014 You\u2019ve bought more \u201Csurprise\u201D coffees for friends than you can count.",
+      "<strong>Comfortably loyal</strong> \u2014 You have your go-to order, and you love it. Why fix what isn\u2019t broken?",
+      "<strong>Warm and inclusive</strong> \u2014 If someone\u2019s sitting alone at the shop, you\u2019re the one who might strike up a conversation."
+    ],
+    drinks: [
+      { name: "Classic Vanilla Latte", desc: "Warm, sweet, reliable. Just like you." },
+      { name: "Caramel Macchiato", desc: "A little indulgent, a little special \u2014 perfect for sharing a table with someone you love." },
+      { name: "Hot Chocolate with a Shot of Espresso", desc: "Because sometimes the best drink is the one that makes your friend say, \u201CWait, what\u2019s that? Can I try it?\u201D" }
+    ],
+    nudge: "A cortado. It\u2019s small, it\u2019s simple, and it\u2019ll give you something new to talk about. Bonus: order two and hand one to a stranger.",
+    shareText: "I\u2019m a Campfire Connector! \u2615\uFE0F\uD83D\uDD25 The best part of coffee is who you share it with. I\u2019m the friend who always texts \u201Ccoffee this week?\u201D and turns every latte into a two-hour catch-up. What\u2019s YOUR coffee personality? #BasecampCoffee"
+  },
+  "Cozy Ritualist": {
+    cssClass: "cozy-ritualist",
+    tagline: "Same time, same mug, same magic.",
+    description: "Your coffee ritual is sacred, and you wouldn\u2019t have it any other way. The quiet morning pour, the specific mug, the exact ratio of cream \u2014 these aren\u2019t habits, they\u2019re anchors. While the world spins faster every day, your coffee is the one thing that\u2019s perfectly, reliably yours. You don\u2019t need novelty. You need that first sip to taste exactly like it did yesterday, because that\u2019s how you know today is going to be okay.",
+    traits: [
+      "<strong>Intentional and present</strong> \u2014 You don\u2019t scroll while you sip. (Okay, maybe a little. But the first few sips? Those are yours.)",
+      "<strong>Creature of comfort</strong> \u2014 You have a favorite seat at Basecamp. The baristas know.",
+      "<strong>Quietly confident</strong> \u2014 You don\u2019t need to justify your usual. It\u2019s yours. It\u2019s perfect.",
+      "<strong>Grounded and steady</strong> \u2014 People come to you when things feel chaotic, probably because you always seem like you have it together. (It\u2019s the coffee ritual. That\u2019s the secret.)"
+    ],
+    drinks: [
+      { name: "House Drip Coffee", desc: "The foundation. The classic. Ask for it in a ceramic mug if you\u2019re staying." },
+      { name: "Double Espresso", desc: "No frills, no foam. Just coffee doing exactly what coffee does best." },
+      { name: "French Press for One", desc: "When you want to slow everything down and make the ritual the whole point." }
+    ],
+    nudge: "An affogato. It\u2019s espresso poured over vanilla ice cream \u2014 still simple, still warm-meets-cozy, but with a tiny twist that might just earn a spot in your rotation.",
+    shareText: "I\u2019m a Cozy Ritualist! \u2615\uFE0F\u2728 Same time, same mug, same magic. My coffee routine isn\u2019t a habit \u2014 it\u2019s an anchor. The baristas know my order and I wouldn\u2019t change a thing. What\u2019s YOUR coffee personality? #BasecampCoffee"
+  },
+  "Flavor Explorer": {
+    cssClass: "flavor-explorer",
+    tagline: "I\u2019ll have one of everything \u2014 and I\u2019m bringing friends.",
+    description: "You are the person who makes every coffee run an event. You try the seasonal special on day one. You\u2019re the reason the barista made that off-menu creation \u2014 because you asked \u201Cwhat would you make if you could make anything?\u201D and then actually ordered it. But here\u2019s the thing: you don\u2019t keep your discoveries to yourself. You drag your friends along, you post the pretty latte art, and you turn \u201Cjust getting coffee\u201D into a whole vibe. You\u2019re adventurous and social, and honestly, coffee culture is better because of people like you.",
+    traits: [
+      "<strong>Enthusiastically curious</strong> \u2014 You don\u2019t just try new things; you celebrate them. Out loud. To everyone.",
+      "<strong>Trend-aware</strong> \u2014 You knew about oat milk before it was everywhere, and you have opinions about the latest coffee trend.",
+      "<strong>Socially adventurous</strong> \u2014 You\u2019ll try a new coffee shop on vacation, sure \u2014 but only if you can bring someone along.",
+      "<strong>Joyfully generous</strong> \u2014 You\u2019re the friend who shows up with \u201Cyou HAVE to try this\u201D and hands someone a drink they never would have ordered."
+    ],
+    drinks: [
+      { name: "Seasonal Special", desc: "Whatever it is this month, you\u2019re getting it first." },
+      { name: "Iced Brown Sugar Oat Milk Latte", desc: "Sweet, trendy, looks amazing in your hand. Made for you." },
+      { name: "Matcha Espresso Fusion", desc: "Two worlds colliding in one cup. You\u2019ll tell three people about it today." }
+    ],
+    nudge: "A straight-up single-origin black coffee. No syrup, no milk, no photo op. Just you and the bean. You might be surprised how much you love the quiet version.",
+    shareText: "I\u2019m a Flavor Explorer! \u2615\uFE0F\uD83C\uDF08 I\u2019ll try the seasonal special on day one, order the off-menu creation, and bring my friends along for the ride. Every coffee run is an adventure worth sharing. What\u2019s YOUR coffee personality? #BasecampCoffee"
+  }
+};
+
+// Adjacent quadrant mapping for secondary type
+// [0] shares adventure axis (differs on social), [1] shares social axis (differs on adventure)
+const adjacentTypes = {
+  "Bold Adventurer": ["Flavor Explorer", "Cozy Ritualist"],
+  "Flavor Explorer": ["Bold Adventurer", "Campfire Connector"],
+  "Cozy Ritualist": ["Campfire Connector", "Bold Adventurer"],
+  "Campfire Connector": ["Cozy Ritualist", "Flavor Explorer"]
+};
+
+let currentQuestion = 0;
+let scores = { adventure: 0, social: 0 };
+
+function startQuiz() {
+  currentQuestion = 0;
+  scores = { adventure: 0, social: 0 };
+  showScreen("questionScreen");
+  document.getElementById("progressWrapper").classList.add("visible");
+  document.getElementById("progressText").classList.add("visible");
+  renderQuestion();
+}
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function renderQuestion() {
+  const q = questions[currentQuestion];
+  document.getElementById("questionText").textContent = q.text;
+  document.getElementById("progressText").textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+  document.getElementById("progressBar").style.width = ((currentQuestion) / questions.length * 100) + "%";
+
+  const container = document.getElementById("answersContainer");
+  container.innerHTML = "";
+
+  // Shuffle answer order for each render
+  const shuffled = q.answers.map((a, i) => ({ ...a, origIndex: i }));
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  shuffled.forEach(answer => {
+    const btn = document.createElement("button");
+    btn.className = "answer-btn";
+    btn.textContent = answer.text;
+    btn.addEventListener("click", () => selectAnswer(q.axis, answer.score));
+    container.appendChild(btn);
+  });
+}
+
+function selectAnswer(axis, score) {
+  scores[axis] += score;
+  currentQuestion++;
+
+  if (currentQuestion < questions.length) {
+    // Brief delay for transition feel
+    const card = document.querySelector(".question-card");
+    card.style.opacity = "0";
+    card.style.transform = "translateY(12px)";
+    setTimeout(() => {
+      renderQuestion();
+      card.style.opacity = "1";
+      card.style.transform = "translateY(0)";
+    }, 200);
+  } else {
+    document.getElementById("progressBar").style.width = "100%";
+    setTimeout(() => {
+      document.getElementById("progressWrapper").classList.remove("visible");
+      document.getElementById("progressText").classList.remove("visible");
+      showResult();
+    }, 400);
+  }
+}
+
+function getPersonalityType(adventure, social) {
+  if (adventure > 0 && social <= 0) return "Bold Adventurer";
+  if (adventure > 0 && social > 0) return "Flavor Explorer";
+  if (adventure <= 0 && social <= 0) return "Cozy Ritualist";
+  return "Campfire Connector";
+}
+
+function getSecondaryType(adventure, social, primary) {
+  // The secondary type is the adjacent quadrant closest to the user's score
+  const candidates = adjacentTypes[primary];
+  // Determine which axis is closer to the boundary
+  const adventureDist = Math.abs(adventure);
+  const socialDist = Math.abs(social);
+
+  // The axis closer to 0 determines which adjacent quadrant
+  // Adjacent types: first shares adventure axis, second shares social axis
+  if (adventureDist <= socialDist) {
+    // Closer to flipping on adventure axis → the adjacent that differs on adventure
+    // candidates[1] shares the social axis (differs on adventure)
+    return candidates[1];
+  } else {
+    // Closer to flipping on social axis → the adjacent that differs on social
+    // candidates[0] shares the adventure axis (differs on social)
+    return candidates[0];
+  }
+}
+
+function showResult() {
+  const primary = getPersonalityType(scores.adventure, scores.social);
+  const secondary = getSecondaryType(scores.adventure, scores.social, primary);
+  const type = personalityTypes[primary];
+
+  showScreen("resultScreen");
+
+  document.getElementById("resultContent").innerHTML = `
+    <div class="result-header ${type.cssClass}">
+      <div class="label">You are a</div>
+      <h1>${primary}</h1>
+      <div class="tagline">${type.tagline}</div>
+      <div class="secondary-type">with a ${secondary} streak</div>
+    </div>
+
+    <div class="result-card">
+      <h3>About You</h3>
+      <p>${type.description}</p>
+    </div>
+
+    <div class="result-card">
+      <h3>Core Traits</h3>
+      <ul class="traits-list">
+        ${type.traits.map(t => `<li>${t}</li>`).join("")}
+      </ul>
+    </div>
+
+    <div class="result-card">
+      <h3>Your Drinks</h3>
+      <ul class="drinks-list">
+        ${type.drinks.map(d => `<li><span class="drink-name">${d.name}</span> &mdash; ${d.desc}</li>`).join("")}
+      </ul>
+    </div>
+
+    <div class="result-card">
+      <h3>Your Next Adventure</h3>
+      <div class="nudge-text"><strong>Try next:</strong> ${type.nudge}</div>
+    </div>
+
+    <div class="result-card">
+      <h3>Share Your Result</h3>
+      <div class="share-section">
+        <div class="share-text">${type.shareText}</div>
+        <button class="btn-copy" onclick="copyShareText(this)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-retake" onclick="retakeQuiz()">Retake Quiz</button>
+  `;
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function copyShareText(btn) {
+  const text = btn.closest(".share-section").querySelector(".share-text").textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add("copied");
+    btn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7"/></svg>
+      Copied!
+    `;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2"/></svg>
+        Copy
+      `;
+    }, 2000);
+  });
+}
+
+function retakeQuiz() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => startQuiz(), 300);
+}
+</script>
+</body>
+</html>
